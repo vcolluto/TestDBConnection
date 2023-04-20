@@ -3,6 +3,14 @@
 const string connectionString = 
     "Data Source=localhost;Initial Catalog=Northwind;Integrated Security=True";
 
+string userName, password;
+
+Console.Write("Inserisci il tuo username: ");
+userName = Console.ReadLine();
+
+Console.Write("Inserisci la tua password: ");
+password = Console.ReadLine();
+
 
 // istanzio la risorsa nello using
 using (SqlConnection connessioneSql = new SqlConnection(connectionString))
@@ -11,19 +19,22 @@ using (SqlConnection connessioneSql = new SqlConnection(connectionString))
     try
     {
         connessioneSql.Open();
-        Console.WriteLine("Connessione effettuata!");
+       // Console.WriteLine("Connessione effettuata!");
 
-        string sqlQuery = "SELECT * FROM Products";
+        string sqlQuery = $"SELECT FirstName, LastName FROM Employees " +
+                            $"WHERE UserName='{userName}' AND password='{password}'";       //DA EVITARE COME LA PESTE!
+        // ad esempio, provare ad inserire come password: ' or 1=1 --
         using (SqlCommand cmd=new SqlCommand(sqlQuery, connessioneSql))
         using (SqlDataReader reader = cmd.ExecuteReader())
         {
-            while (reader.Read()) 
+            if (reader.Read())  //ho trovato una riga     
             {
-                 // int idx = reader.GetOrdinal("ProductName");
-                 // Console.WriteLine($"Id: {reader.GetInt32(0)}\tName: {reader.GetString(idx)}");
-                 //         OPPURE (in questo caso vengono restituiti degli Object):
-                Console.WriteLine($"Id: {reader["ProductID"]}\tName: {reader["ProductName"]}");
+                Console.WriteLine($"Benvenuto {reader["FirstName"]} {reader["LastName"]}");
+                Console.WriteLine("Esegui operazioni riservate!!!");
             }
+
+            else
+                Console.WriteLine("Username o password errati!");
         }
     }
     catch (Exception ex)
