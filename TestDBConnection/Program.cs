@@ -1,4 +1,5 @@
-﻿using System.Data.SqlClient;
+﻿using System;
+using System.Data.SqlClient;
 
 const string connectionString = 
     "Data Source=localhost;Initial Catalog=Northwind;Integrated Security=True";
@@ -14,10 +15,13 @@ password = Console.ReadLine();
 if (loginSenzaInjection(userName,password))
 {    
     Console.WriteLine($"Numero prodotti disponibili: {NumeroProdotti()}");
-    if (inserisciProdotto("Birra", false) == 1)
-        Console.WriteLine("Prodotto correttamente inserito");
-    else
-        Console.WriteLine("Prodotto non inserito!");
+    //if (inserisciProdotto("Birra", false) == 1)
+    //    Console.WriteLine("Prodotto correttamente inserito");
+    //else
+    //    Console.WriteLine("Prodotto non inserito!");
+
+    //prima dell'ordine abbiamo 13 unità in stock del prodotto 3
+    InserisciOrdine(3, "ANTON", 4);
 }
 
 
@@ -193,6 +197,77 @@ static int NumeroProdotti()
                         res=reader.GetInt32(0); 
                 }
                 */
+            }
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+        }
+    }
+    return res;
+}
+
+
+static int InserisciOrdine(int ProductId, string CustomerId, int Quantity)
+{
+    int res = 0;
+    // istanzio la risorsa nello using
+    using (SqlConnection connessioneSql = new SqlConnection(connectionString))
+    {
+        // da qui in poi posso usare la risorsa 
+        try
+        {
+            connessioneSql.Open();
+            
+            using (SqlCommand cmd = new SqlCommand())
+            {
+                using (SqlTransaction transaction = connessioneSql.BeginTransaction("Inserimento ordine"))
+                {
+                    cmd.Connection = connessioneSql;
+                    cmd.Transaction = transaction;
+                    try
+                    {
+                        //INSERISCO UNA RIGA DI ORDINE
+                        cmd.CommandText =
+                            "INSERT INTO Orders(CustomerId, OrderDate) " +
+                            "VALUES(@CustomerId, GETDATE())";       //data recuperata dal server
+                        cmd.Parameters.AddWithValue("@CustomerId", CustomerId);
+                        int nr=cmd.ExecuteNonQuery();
+
+
+                        //Recupero l'id dell'ordine inserito (autogenerato)
+                        cmd.CommandText =
+                            "select SCOPE_IDENTITY()";
+                        int OrderId = (int) cmd.ExecuteScalar();
+
+                        //INSERISCO UNA RIGA DI DETTAGLIO ORDINE
+                        cmd.CommandText =
+                            "INSERT INTO [Order Details](OrderID, ProductID, UnitPrice, Quantity, Discount) " +
+                            "VALUES(@OrderID, @ProductID, 0, @Quantity, 0)";
+                        cmd.Parameters.Clear();
+                        cmd.Parameters.AddWithValue("@OrderID", OrderId);
+                        cmd.Parameters.AddWithValue("@ProductID", ProductId);
+                        cmd.Parameters.AddWithValue("@Quantity", Quantity);
+                        cmd.ExecuteNonQuery();
+
+                        //AGGIORNO LA GIACENZA SULLA TABELLA PRODOTTI
+                        cmd.CommandText = "UPDATE Products SET UnitsInStock=UnitsInStock-@Quantity " +
+                                        "WHERE ProductID=@ProductID";
+                        cmd.Parameters.Clear();
+                        cmd.Parameters.AddWithValue("@Quantity", Quantity);
+                        cmd.Parameters.AddWithValue("@ProductID", ProductId);
+
+                        transaction.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.ToString());
+                        transaction.Rollback();
+                    }
+                }
+
+                
             }
 
         }
