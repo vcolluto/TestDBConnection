@@ -231,15 +231,12 @@ static int InserisciOrdine(int ProductId, string CustomerId, int Quantity)
                         //INSERISCO UNA RIGA DI ORDINE
                         cmd.CommandText =
                             "INSERT INTO Orders(CustomerId, OrderDate) " +
-                            "VALUES(@CustomerId, GETDATE())";       //data recuperata dal server
+                            "VALUES(@CustomerId, GETDATE());SELECT SCOPE_IDENTITY();";       //data recuperata dal server
                         cmd.Parameters.AddWithValue("@CustomerId", CustomerId);
-                        int nr=cmd.ExecuteNonQuery();
+                        decimal OrderId = (decimal)cmd.ExecuteScalar();
 
 
-                        //Recupero l'id dell'ordine inserito (autogenerato)
-                        cmd.CommandText =
-                            "select SCOPE_IDENTITY()";
-                        int OrderId = (int) cmd.ExecuteScalar();
+                       
 
                         //INSERISCO UNA RIGA DI DETTAGLIO ORDINE
                         cmd.CommandText =
@@ -257,7 +254,7 @@ static int InserisciOrdine(int ProductId, string CustomerId, int Quantity)
                         cmd.Parameters.Clear();
                         cmd.Parameters.AddWithValue("@Quantity", Quantity);
                         cmd.Parameters.AddWithValue("@ProductID", ProductId);
-
+                        cmd.ExecuteNonQuery();
                         transaction.Commit();
                     }
                     catch (Exception ex)
