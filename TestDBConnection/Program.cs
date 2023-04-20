@@ -13,7 +13,18 @@ using (SqlConnection connessioneSql = new SqlConnection(connectionString))
         connessioneSql.Open();
         Console.WriteLine("Connessione effettuata!");
 
-        string sql
+        string sqlQuery = "SELECT * FROM Products";
+        using (SqlCommand cmd=new SqlCommand(sqlQuery, connessioneSql))
+        using (SqlDataReader reader = cmd.ExecuteReader())
+        {
+            while (reader.Read()) 
+            {
+                 // int idx = reader.GetOrdinal("ProductName");
+                 // Console.WriteLine($"Id: {reader.GetInt32(0)}\tName: {reader.GetString(idx)}");
+                 //         OPPURE (in questo caso vengono restituiti degli Object):
+                Console.WriteLine($"Id: {reader["ProductID"]}\tName: {reader["ProductName"]}");
+            }
+        }
     }
     catch (Exception ex)
     {
